@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "GitHubPushRelease": {
+      "commandName": "Project"
+    }
+  }
+}
