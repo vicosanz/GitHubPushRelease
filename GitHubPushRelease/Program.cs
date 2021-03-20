@@ -1,15 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Octokit;
 
 namespace GitHubPushRelease
 {
     class Program
     {
-        static async System.Threading.Tasks.Task Main(string[] args)
+        static async Task Main(string[] args)
         {
             if (args.Length == 0)
             {
@@ -80,20 +80,7 @@ namespace GitHubPushRelease
                 {
                     if (!string.IsNullOrWhiteSpace(GitToken))
                     {
-                        Keys newkey = new()
-                        {
-                            GitUser = GitUser,
-                            GitToken = GitToken
-                        };
-
-                        List<Keys> keys = keysManager.Keys;
-                        Keys key = keys.Where(x => string.Equals(x.GitUser, GitUser, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
-                        if (key != null)
-                        {
-                            keys.Remove(key);
-                        }
-                        keys.Add(newkey);
-                        keysManager.SaveKeys(keys);
+                        UpdateKeys(keysManager, GitUser, GitToken);
                     }
                     if (!string.IsNullOrWhiteSpace(LocalFolder)
                         && !string.IsNullOrWhiteSpace(GitRepository))
@@ -103,7 +90,13 @@ namespace GitHubPushRelease
                             GitToken = keysManager.GetToken(GitUser)?.GitToken;
                             if (string.IsNullOrWhiteSpace(GitToken))
                             {
-                                throw new AppException("GitToken was not stored nor specified");
+                                Console.WriteLine("GitToken was not stored nor specified");
+                                Console.Write("Input your gittoken here:");
+                                GitToken = Console.ReadLine();
+                                if (string.IsNullOrWhiteSpace(GitToken))
+                                {
+                                    UpdateKeys(keysManager, GitUser, GitToken);
+                                }
                             }
                         }
 
@@ -135,9 +128,10 @@ namespace GitHubPushRelease
 
                             using (FileStream rawData = File.OpenRead(file))
                             {
-                                ReleaseAssetUpload data = new() {
-                                    FileName = filename, 
-                                    ContentType = "application/octet-stream", 
+                                ReleaseAssetUpload data = new()
+                                {
+                                    FileName = filename,
+                                    ContentType = "application/octet-stream",
                                     RawData = rawData
                                 };
                                 Console.WriteLine($"  Uploading local file {filename}");
@@ -160,6 +154,17 @@ namespace GitHubPushRelease
             return;
         }
 
+        private static void UpdateKeys(KeysManager keysManager, string GitUser, string GitToken)
+        {
+            Keys newkey = new()
+            {
+                GitUser = GitUser,
+                GitToken = GitToken
+            };
+            keysManager.AddorUpdateKey(newkey);
+            keysManager.SaveKeys();
+        }
+
         private static void Usage(string error = null)
         {
             if (!string.IsNullOrWhiteSpace(error))
@@ -169,7 +174,7 @@ namespace GitHubPushRelease
             }
             Console.WriteLine("Usage: ");
             Console.WriteLine("     GitHubPushRelease -u=cool -t=token123");
-            Console.WriteLine("     GitHubPushRelease -u=cool -r=mynewrepo -f=./Releases");
+            Console.WriteLine("     GitHubPushRelease -u=cool -r=mynewrepo -f='./Releases'");
             Console.WriteLine("");
             Console.WriteLine("Options:");
             Console.WriteLine("     -u, --GitUser=VALUE             Set gituser");

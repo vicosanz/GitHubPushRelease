@@ -41,22 +41,33 @@ namespace GitHubPushRelease
             }
         }
 
-        public void SaveKeys(List<Keys> keys)
+        public void SaveKeys()
         {
-            if (keys is null)
+            if (Keys is null)
             {
-                throw new System.ArgumentNullException(nameof(keys));
+                throw new Exception("Keys are not loaded");
             }
 
-            XmlSerializer xmlSerializer = new(keys.GetType());
+            XmlSerializer xmlSerializer = new(Keys.GetType());
             TextWriter textWriter = new StreamWriter(_filename);
-            xmlSerializer.Serialize(textWriter, keys);
+            xmlSerializer.Serialize(textWriter, Keys);
             textWriter.Close();
         }
 
         public Keys GetToken(string gitUser)
         {
-            return Keys.Where(x => string.Compare(x.GitUser, gitUser, true) == 0).FirstOrDefault();
+            return Keys.Where(x => string.Equals(x.GitUser, gitUser, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+        }
+
+        public void AddorUpdateKey(Keys newkey)
+        {
+            if (Keys is null)
+            {
+                throw new Exception("Keys are not loaded");
+            }
+
+            Keys.RemoveAll(x => string.Equals(x.GitUser, newkey.GitUser, StringComparison.InvariantCultureIgnoreCase));
+            Keys.Add(newkey);
         }
     }
 }
